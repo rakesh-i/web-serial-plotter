@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Serial-Plotter</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.3.2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@1.27.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-streaming@2.0.0"></script>
+    
+</head>
+<body>
+    <div>
+        <input type="text" name="ip" id="ipAddress" placeholder="Enter IP Address" value="192.168.0.100" >
+        <button id="toggleButton">Connect</button>
+        <span id="status">Disconnected</span>
+    </div>
+    <div id="container">
+        <canvas id="myChart"></canvas>
+    </div>
+</body>
+<script src="script.js"></script>
+</html>
