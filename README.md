@@ -16,6 +16,6 @@ const char* password = "PASSWORD";
 Note down the IP from the serial monitor once ESP32 is connected to the local WIFI.
 
 ## Running the web-serial-plotter
-Run standalone.html by clicking on it. It should open a webpage. If not right click and choose any browser for runner.
+Run "standalone.html" by clicking on it. It should open a webpage. If not right click and choose any browser for runner.
 Make sure to be on the same local network as ESP32.
 Type the IP in the input box and hit Connect. This should start the serial plotter. 
