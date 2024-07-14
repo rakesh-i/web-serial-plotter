@@ -3,52 +3,15 @@ var isConnected = false;
 var isError = false;
 var messageTimeout;
 var connectionTimeout;
-var connectionTimeoutDuration = 3000; // 5 seconds
-
-var c = 0;
-var E1 = 0;
-var E2 = 0;
-var initValueE1 = 0;
-var initValueE2 = 0;
-var count = 0;
-
-var ax = 0;
-var ay = 0;
-var az = 0;
+var connectionTimeoutDuration = 3000; // 3 seconds
+var datasetsMap = {}; // Object to store dataset values dynamically
   
+// Get the canvas context for the chart
 const ctxc = document.getElementById('myChart');
 const config = {
     type: 'line',
     data: {
-        datasets: [
-            {
-                label: 'X',
-                backgroundColor: 'rgba(0, 255, 132, 0.5)',
-                borderColor: 'rgb(0, 255, 0)',
-                cubicInterpolationMode: 'monotone',
-                pointRadius: 0,
-                pointStyle: 'circle',
-
-            },
-            {
-                label: 'Y',
-                backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                borderColor: 'rgb(255, 0, 0)',
-                cubicInterpolationMode: 'monotone',
-                pointRadius: 0,
-                pointStyle: 'circle',
-
-            },
-            {
-                label: 'Z',
-                backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                borderColor: 'rgb(0, 0, 255)',
-                cubicInterpolationMode: 'monotone',
-                pointRadius: 0,
-                pointStyle: 'circle',
-                data: []
-            }
-        ]
+        datasets: [] // Initialize with an empty array of datasets
     },
     options: {
         scales: {
@@ -57,47 +20,43 @@ const config = {
                 realtime: {
                     frameRate: 60,
                     refresh: 10,
-                    // delay:500,
-                    duration:5000,
+                    duration: 5000,
                     onRefresh: chart => {
                         const now = Date.now();
-                        chart.data.datasets[0].data.push({
-                            x: now,
-                            y: ax
-                        }),
-                        chart.data.datasets[1].data.push({
-                            x: now,
-                            y: ay
-                        }),
-                        chart.data.datasets[2].data.push({
-                            x: now,
-                            y: az
-                        })
-                        
+                        for (let key in datasetsMap) {
+                            chart.data.datasets.forEach(dataset => {
+                                if (dataset.label === key) {
+                                    dataset.data.push({
+                                        x: now,
+                                        y: datasetsMap[key]
+                                    });
+                                }
+                            });
+                        }
                     }
                 },
-                display:false
+                display: false
             }
         },
-        plugins:{
-            zoom:{
-                pan:{
-                    enabled:true,
+        plugins: {
+            zoom: {
+                pan: {
+                    enabled: true,
                     mode: 'x'
                 },
-                zoom:{
-                    pinch:{
-                        enabled:true
+                zoom: {
+                    pinch: {
+                        enabled: true
                     },
-                    wheel:{
-                        enabled:true
+                    wheel: {
+                        enabled: true
                     },
-                    mode:'x'
+                    mode: 'x'
                 },
-                limits:{
-                    x:{
+                limits: {
+                    x: {
                         minDelay: 0,
-                        maxDelay: 4000,
+                        maxDelay: 50,
                         minDuration: 1000,
                         maxDuration: 20000
                     }
@@ -105,33 +64,29 @@ const config = {
             }
         }
     }
-    
 };
-const chart = new Chart(ctxc,config 
 
-);
-Chart.defaults.set('plugins.streaming', {
-    duration: 20000
-});
+// Create the chart with the specified configuration
+const chart = new Chart(ctxc, config);
 
+// Function to toggle WebSocket connection on and off
 function toggleWebSocket() {
     var ip = document.getElementById("ipAddress").value;
     if (isConnected) {
         // Close the WebSocket connection
         isError = false;
         webSocket.close();
-        count = 0;
-        
     } else {
         // Open the WebSocket connection
         startWebSocket(ip);
     }
 }
 
+// Function to start the WebSocket connection
 function startWebSocket(ip) {
-    // Connect to the WebSocket server
     webSocket = new WebSocket(`ws://${ip}:81`);
 
+    // Set a timeout to handle connection timeout
     connectionTimeout = setTimeout(function() {
         if (webSocket.readyState !== WebSocket.OPEN) {
             console.log("WebSocket connection timeout.");
@@ -141,26 +96,34 @@ function startWebSocket(ip) {
         }
     }, connectionTimeoutDuration);
 
-    // Handle incoming messages
+    // Handle incoming messages from the WebSocket server
     webSocket.onmessage = function(event) {
-        c++;
         var data = JSON.parse(event.data);
-        // document.getElementById("Encoder1").innerText = data.Encoder1;
-        // document.getElementById("Encoder2").innerText = data.Encoder2;
-        // document.getElementById("curE1").innerText = E1;
-        // document.getElementById("curE2").innerText = E2;
-
-        if (data.ax !== undefined && data.ay !== undefined && data.az !== undefined) {
-            ax = data.ax;
-            ay  = data.ay;
-            az = data.az;
-        }
+        // Create new dataset for each keys in 'data' JSON
+        Object.keys(data).forEach(key => {
+            if (!datasetsMap.hasOwnProperty(key)) {
+                datasetsMap[key] = data[key];
+                const color = getRandomColor();
+                const newDataset = {
+                    label: key,
+                    backgroundColor: color,
+                    borderColor: color,
+                    cubicInterpolationMode: 'monotone',
+                    pointRadius: 0,
+                    pointStyle: 'circle',
+                    data: []
+                };
+                config.data.datasets.push(newDataset);
+                chart.update();
+            } else {
+                datasetsMap[key] = data[key];
+            }
+        });
 
         resetMessageTimeout();
-
     };
 
-    // Handle connection open event
+    // Handle WebSocket connection open event
     webSocket.onopen = function() {
         console.log("WebSocket connection opened.");
         isConnected = true;
@@ -169,7 +132,7 @@ function startWebSocket(ip) {
         resetMessageTimeout(); // Start the timeout when the connection is opened
     };
 
-    // Handle connection close event
+    // Handle WebSocket connection close event
     webSocket.onclose = function() {
         console.log("WebSocket connection closed.");
         isConnected = false;
@@ -178,7 +141,7 @@ function startWebSocket(ip) {
         clearTimeout(connectionTimeout); // Clear the connection timeout
     };
 
-    // Handle connection error event
+    // Handle WebSocket connection error event
     webSocket.onerror = function() {
         console.log("WebSocket connection error.");
         isConnected = false;
@@ -189,8 +152,8 @@ function startWebSocket(ip) {
     };
 }
 
+// Function to reset the message timeout
 function resetMessageTimeout() {
-    // Clear any existing timeout
     clearTimeout(messageTimeout);
     // Set a new timeout to trigger if no message is received within 5 seconds
     messageTimeout = setTimeout(function() {
@@ -202,27 +165,37 @@ function resetMessageTimeout() {
     }, 5000); // 5 seconds
 }
 
+// Function to update the connection status on the UI
 function updateStatus() {
     var statusElement = document.getElementById("status");
     var buttonElement = document.getElementById("toggleButton");
     if (isConnected) {
         statusElement.innerText = "Connected";
         buttonElement.innerText = "Disconnect";
-        
     } else {
-        if(isError == true){
+        // clear the chart
+        config.data.datasets = [];
+        datasetsMap = {};
+        if (isError == true) {
             statusElement.innerText = "Connection Failed";
             buttonElement.innerText = "Retry";
-            
-        }
-        else{
+        } else {
             statusElement.innerText = "Disconnected";
             buttonElement.innerText = "Connect";
             isError = false;
-            
         }
-        
     }
 }
 
+// Function to generate a random color for datasets
+function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
+// Add event listener to the toggle button
 document.getElementById("toggleButton").addEventListener("click", toggleWebSocket);
