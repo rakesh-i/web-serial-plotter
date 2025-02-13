@@ -4,6 +4,9 @@ Clone the repository to your local machine using the following command:
 ```
 https://github.com/rakesh-i/web-serial-plotter.git
 ```
+## Dependencies
+* WebSockets library by Markus Sattler. 
+* Adafrit_Sensor library. 
 ## Connect to Wi-Fi
 Open the example.ino file in the Arduino IDE.
 Enter your Wi-Fi credentials in the code:
